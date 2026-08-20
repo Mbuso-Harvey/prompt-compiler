@@ -214,15 +214,15 @@ class PromptCompiler {
   constructor(options = {}) {
     this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY || process.env.AZURE_OPENAI_KEY || null;
     this.provider = options.provider || 'local'; // 'local' | 'openai' | 'anthropic' | 'vertex' | 'azure' | 'custom'
-    this.model = options.model || (this.provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash');
+    this.model = options.model || (this.provider === 'openai' ? 'gpt-5.4-mini' : (this.provider === 'vertex' ? 'gemini-3.5-flash' : 'claude-haiku-4.5'));
     this.localEngine = new RuleBasedCompilerEngine();
     this.customEndpoint = options.customEndpoint || null;
-    // GCP Vertex / Gemini configs
-    this.gcpProjectId = options.gcpProjectId || process.env.GCP_PROJECT_ID || null;
+    // GCP Vertex / Gemini configs (defaults matched to user's Google Cloud project)
+    this.gcpProjectId = options.gcpProjectId || process.env.GCP_PROJECT_ID || 'warm-skill-503300-b0';
     this.gcpRegion = options.gcpRegion || process.env.GCP_REGION || 'us-central1';
     // Azure AI Foundry / Azure OpenAI configs
     this.azureEndpoint = options.azureEndpoint || process.env.AZURE_AI_ENDPOINT || null;
-    this.azureDeployment = options.azureDeployment || process.env.AZURE_DEPLOYMENT_NAME || 'gpt-4o-mini';
+    this.azureDeployment = options.azureDeployment || process.env.AZURE_DEPLOYMENT_NAME || 'gpt-5.4-mini';
   }
 
   async compile(rawDictation) {
@@ -263,13 +263,14 @@ class PromptCompiler {
 
   async _compileWithVertexAI(rawDictation) {
     try {
+      const modelName = this.model || 'gemini-3.5-flash';
       // Direct Gemini REST endpoint using API key or Vertex OAuth bearer token
-      const endpoint = this.apiKey.startsWith('AIza')
-        ? `https://generativelanguage.googleapis.com/v1beta/models/${this.model || 'gemini-1.5-flash'}:generateContent?key=${this.apiKey}`
-        : `https://${this.gcpRegion}-aiplatform.googleapis.com/v1/projects/${this.gcpProjectId}/locations/${this.gcpRegion}/publishers/google/models/${this.model || 'gemini-1.5-flash'}:generateContent`;
+      const endpoint = (this.apiKey && this.apiKey.startsWith('AIza'))
+        ? `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`
+        : `https://${this.gcpRegion}-aiplatform.googleapis.com/v1/projects/${this.gcpProjectId}/locations/${this.gcpRegion}/publishers/google/models/${modelName}:generateContent`;
 
       const headers = { 'Content-Type': 'application/json' };
-      if (!this.apiKey.startsWith('AIza')) {
+      if (this.apiKey && !this.apiKey.startsWith('AIza')) {
         headers['Authorization'] = `Bearer ${this.apiKey}`;
       }
 

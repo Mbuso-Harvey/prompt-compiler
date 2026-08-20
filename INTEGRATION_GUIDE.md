@@ -113,25 +113,30 @@ Run Prompt Compiler as a background tray tool:
 
 You can power the compiler using your **Google Cloud Platform (Vertex AI)** or **Azure AI Foundry** credits for ultra-low latency, cost-effective compilation.
 
-### 🌟 Recommended Model for Compilation:
-- **GCP:** `gemini-1.5-flash` or `gemini-2.0-flash` (near-zero cost, ~150ms latency).
-- **Azure:** `gpt-4o-mini` (cost-efficient, high structured JSON fidelity).
+### 🌟 Recommended Current Models for Compilation:
+- **GCP Vertex AI:** `gemini-3.5-flash` / `gemini-3.1-flash` (ultra-low latency ~150ms, large context window, uses GCP credits).
+- **Azure AI Foundry / OpenAI:** `gpt-5.4-mini` (fast reasoning, tight JSON schema adherence).
+- **Anthropic Model Garden:** `claude-haiku-4.5` (fast, lightweight).
 
 ---
 
 ### 3.1 Google Cloud Vertex AI Setup
 
+Your GCP Project: `warm-skill-503300-b0` (Region: `us-central1`)
+
 Set your environment variables in `.env` or your system environment:
 
 ```bash
-# Option 1: Using Gemini API Key
+# Option 1: Using Gemini API Key (Direct)
 export GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere"
 export COMPILER_PROVIDER="vertex"
-export COMPILER_MODEL="gemini-1.5-flash"
+export COMPILER_MODEL="gemini-3.5-flash"
 
-# Option 2: Using GCP Service Account / Vertex AI Endpoint
-export GCP_PROJECT_ID="your-gcp-project-id"
+# Option 2: Using GCP Project & Vertex AI Endpoint
+export GCP_PROJECT_ID="warm-skill-503300-b0"
 export GCP_REGION="us-central1"
+export COMPILER_PROVIDER="vertex"
+export COMPILER_MODEL="gemini-3.5-flash"
 export VERTEX_BEARER_TOKEN="$(gcloud auth print-access-token)"
 ```
 
@@ -143,7 +148,9 @@ const { PromptCompiler } = require('./src/compiler');
 const compiler = new PromptCompiler({
   provider: 'vertex',
   apiKey: process.env.GEMINI_API_KEY,
-  model: 'gemini-1.5-flash'
+  gcpProjectId: 'warm-skill-503300-b0',
+  gcpRegion: 'us-central1',
+  model: 'gemini-3.5-flash' // or 'gemini-3.1-flash'
 });
 
 const result = await compiler.compile("Um, let's write a function to parse JWTs, wait no, validate JWT signatures.");
@@ -167,7 +174,7 @@ print(result["compiled_prompt"])
 ```bash
 export AZURE_AI_ENDPOINT="https://your-foundry-resource.openai.azure.com"
 export AZURE_OPENAI_KEY="your-azure-api-key"
-export AZURE_DEPLOYMENT_NAME="gpt-4o-mini"
+export AZURE_DEPLOYMENT_NAME="gpt-5.4-mini"
 export COMPILER_PROVIDER="azure"
 ```
 
@@ -179,7 +186,7 @@ const compiler = new PromptCompiler({
   provider: 'azure',
   apiKey: process.env.AZURE_OPENAI_KEY,
   azureEndpoint: process.env.AZURE_AI_ENDPOINT,
-  azureDeployment: process.env.AZURE_DEPLOYMENT_NAME || 'gpt-4o-mini'
+  azureDeployment: process.env.AZURE_DEPLOYMENT_NAME || 'gpt-5.4-mini'
 });
 
 const result = await compiler.compile(rawSpeech);
@@ -189,9 +196,9 @@ const result = await compiler.compile(rawSpeech);
 
 ## 4. Architectural Comparison: Cloud vs Local Compiler
 
-| Feature | GCP Vertex AI (`gemini-1.5-flash`) | Azure AI Foundry (`gpt-4o-mini`) | Local Rule Engine (Offline) |
+| Feature | GCP Vertex AI (`gemini-3.5-flash`) | Azure AI Foundry (`gpt-5.4-mini`) | Local Rule Engine (Offline) |
 | :--- | :--- | :--- | :--- |
-| **Speed / Latency** | ~150ms - 250ms | ~250ms - 400ms | < 5ms (Instant) |
+| **Speed / Latency** | ~150ms - 200ms | ~200ms - 350ms | < 5ms (Instant) |
 | **Cost** | Negligible (uses GCP credits) | Negligible (uses Azure credits) | $0.00 (Zero network) |
 | **Complex Disfluency Handling** | Excellent (handles 10-minute long rambles) | Excellent | Good for standard patterns & filler words |
 | **Offline Support** | No | No | 100% Offline |
@@ -201,6 +208,6 @@ const result = await compiler.compile(rawSpeech);
 
 ## 5. Summary & Recommendation
 
-- **Best for Daily Use with GCP Credits:** Use **`vertex`** with **`gemini-1.5-flash`** — it is extremely fast, processes large transcripts instantly, and costs fractions of a cent.
-- **Best for Azure Ecosystem:** Use **`azure`** with **`gpt-4o-mini`** through your Azure AI Foundry resource.
+- **Best for Daily Use with GCP Credits:** Use **`vertex`** with **`gemini-3.5-flash`** (or `gemini-3.1-flash`) on project `warm-skill-503300-b0` — ultra-fast, handles lengthy dictation streams without truncation, and consumes your existing GCP billing.
+- **Best for Azure Ecosystem:** Use **`azure`** with **`gpt-5.4-mini`** through your Azure AI Foundry resource.
 - **Default Fallback:** The local engine automatically kicks in if no network or API keys are present.

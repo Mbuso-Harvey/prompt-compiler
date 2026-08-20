@@ -76,19 +76,21 @@ print(result["compiled_prompt"])
 
 ### 4. Use with Cloud Providers (GCP Vertex AI & Azure AI Foundry)
 ```javascript
-// Google Cloud Vertex AI (Gemini 1.5 Flash)
+// Google Cloud Vertex AI (Gemini 3.5 Flash / Gemini 3.1 Flash)
 const vertexCompiler = new PromptCompiler({
   provider: 'vertex',
   apiKey: process.env.GEMINI_API_KEY,
-  model: 'gemini-1.5-flash'
+  gcpProjectId: 'warm-skill-503300-b0',
+  gcpRegion: 'us-central1',
+  model: 'gemini-3.5-flash'
 });
 
-// Azure AI Foundry / Azure OpenAI (GPT-4o Mini)
+// Azure AI Foundry / Azure OpenAI (GPT-5.4 Mini)
 const azureCompiler = new PromptCompiler({
   provider: 'azure',
   apiKey: process.env.AZURE_OPENAI_KEY,
   azureEndpoint: process.env.AZURE_AI_ENDPOINT,
-  azureDeployment: 'gpt-4o-mini'
+  azureDeployment: 'gpt-5.4-mini'
 });
 ```
 
