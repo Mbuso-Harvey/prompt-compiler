@@ -221,8 +221,8 @@ class PromptCompiler {
     this.gcpProjectId = options.gcpProjectId || process.env.GCP_PROJECT_ID || 'warm-skill-503300-b0';
     this.gcpRegion = options.gcpRegion || process.env.GCP_REGION || 'us-central1';
     // Azure AI Foundry / Azure OpenAI configs
-    this.azureEndpoint = options.azureEndpoint || process.env.AZURE_AI_ENDPOINT || null;
-    this.azureDeployment = options.azureDeployment || process.env.AZURE_DEPLOYMENT_NAME || 'gpt-5.4-mini';
+    this.azureEndpoint = options.azureEndpoint || process.env.AZURE_AI_ENDPOINT || 'https://mbusoharvey-8727-resource.services.ai.azure.com';
+    this.azureDeployment = options.azureDeployment || process.env.AZURE_DEPLOYMENT_NAME || 'gpt-4.1-mini';
   }
 
   async compile(rawDictation) {
@@ -307,14 +307,28 @@ class PromptCompiler {
 
   async _compileWithAzure(rawDictation) {
     try {
-      const endpoint = `${this.azureEndpoint.replace(/\/$/, '')}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=2024-08-01-preview`;
+      // Normalize base URL (strip trailing /api/projects/... if present in copy-paste)
+      let base = (this.azureEndpoint || '').replace(/\/api\/projects\/.*$/i, '').replace(/\/$/, '');
+      
+      // Determine endpoint based on whether it's an AI Foundry services endpoint or standard azure openai endpoint
+      let endpoint;
+      if (base.includes('.services.ai.azure.com')) {
+        endpoint = `${base}/models/chat/completions?api-version=2024-05-01-preview`;
+      } else {
+        endpoint = `${base}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=2024-08-01-preview`;
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'api-key': this.apiKey,
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.apiKey
-        },
+        headers,
         body: JSON.stringify({
+          model: this.azureDeployment || 'gpt-4.1-mini',
           messages: [
             { role: 'system', content: COMPILER_SYSTEM_PROMPT },
             { role: 'user', content: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }

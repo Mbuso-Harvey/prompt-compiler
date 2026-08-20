@@ -169,13 +169,14 @@ print(result["compiled_prompt"])
 
 ---
 
-### 3.2 Azure AI Foundry / Azure OpenAI Setup
+### 3.2 Azure AI Foundry Setup (`gpt-4.1-mini`)
 
 ```bash
-export AZURE_AI_ENDPOINT="https://your-foundry-resource.openai.azure.com"
-export AZURE_OPENAI_KEY="your-azure-api-key"
-export AZURE_DEPLOYMENT_NAME="gpt-5.4-mini"
+export AZURE_AI_ENDPOINT="https://mbusoharvey-8727-resource.services.ai.azure.com"
+export AZURE_OPENAI_KEY="your-azure-foundry-api-key"
+export AZURE_DEPLOYMENT_NAME="gpt-4.1-mini"
 export COMPILER_PROVIDER="azure"
+export COMPILER_MODEL="gpt-4.1-mini"
 ```
 
 #### Code Initialization (Node.js):
@@ -185,8 +186,8 @@ const { PromptCompiler } = require('./src/compiler');
 const compiler = new PromptCompiler({
   provider: 'azure',
   apiKey: process.env.AZURE_OPENAI_KEY,
-  azureEndpoint: process.env.AZURE_AI_ENDPOINT,
-  azureDeployment: process.env.AZURE_DEPLOYMENT_NAME || 'gpt-5.4-mini'
+  azureEndpoint: 'https://mbusoharvey-8727-resource.services.ai.azure.com',
+  azureDeployment: 'gpt-4.1-mini'
 });
 
 const result = await compiler.compile(rawSpeech);
@@ -196,18 +197,18 @@ const result = await compiler.compile(rawSpeech);
 
 ## 4. Architectural Comparison: Cloud vs Local Compiler
 
-| Feature | GCP Vertex AI (`gemini-3.5-flash`) | Azure AI Foundry (`gpt-5.4-mini`) | Local Rule Engine (Offline) |
+| Feature | Azure AI Foundry (`gpt-4.1-mini`) | GCP Vertex AI (`gemini-3.5-flash`) | Local Rule Engine (Offline) |
 | :--- | :--- | :--- | :--- |
-| **Speed / Latency** | ~150ms - 200ms | ~200ms - 350ms | < 5ms (Instant) |
-| **Cost** | Negligible (uses GCP credits) | Negligible (uses Azure credits) | $0.00 (Zero network) |
-| **Complex Disfluency Handling** | Excellent (handles 10-minute long rambles) | Excellent | Good for standard patterns & filler words |
+| **Speed / Latency** | ~180ms - 300ms | ~150ms - 200ms | < 5ms (Instant) |
+| **Cost** | Negligible (uses Azure Foundry credits) | Negligible (uses GCP credits) | $0.00 (Zero network) |
+| **Complex Disfluency Handling** | Excellent (precise first-person JSON schema) | Excellent | Good for standard patterns & filler words |
 | **Offline Support** | No | No | 100% Offline |
-| **Privacy / Enterprise** | Enterprise VPC compliant | Enterprise Tenant compliant | Local device only |
+| **Privacy / Enterprise** | Azure Tenant isolation | Google Cloud VPC isolation | Local device only |
 
 ---
 
 ## 5. Summary & Recommendation
 
-- **Best for Daily Use with GCP Credits:** Use **`vertex`** with **`gemini-3.5-flash`** (or `gemini-3.1-flash`) on project `warm-skill-503300-b0` — ultra-fast, handles lengthy dictation streams without truncation, and consumes your existing GCP billing.
-- **Best for Azure Ecosystem:** Use **`azure`** with **`gpt-5.4-mini`** through your Azure AI Foundry resource.
+- **Best with Azure AI Foundry:** Use **`azure`** with **`gpt-4.1-mini`** on resource `mbusoharvey-8727-resource` — highly accurate for prompt formatting and structured JSON responses.
+- **Best with GCP Credits:** Use **`vertex`** with **`gemini-3.5-flash`** on project `warm-skill-503300-b0`.
 - **Default Fallback:** The local engine automatically kicks in if no network or API keys are present.

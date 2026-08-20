@@ -37,10 +37,10 @@ const server = http.createServer(async (req, res) => {
 
         // Select provider based on model selection
         let activeCompiler = compiler;
-        if (requestedModel === 'gemini-3.5-flash' || requestedModel === 'gemini-3.1-flash') {
+        if (requestedModel === 'gpt-4.1-mini') {
+          activeCompiler = new PromptCompiler({ provider: 'azure', model: 'gpt-4.1-mini' });
+        } else if (requestedModel === 'gemini-3.5-flash' || requestedModel === 'gemini-3.1-flash') {
           activeCompiler = new PromptCompiler({ provider: 'vertex', model: requestedModel });
-        } else if (requestedModel === 'gpt-5.4-mini') {
-          activeCompiler = new PromptCompiler({ provider: 'openai', model: 'gpt-5.4-mini' });
         } else if (requestedModel === 'claude-haiku-4.5') {
           activeCompiler = new PromptCompiler({ provider: 'anthropic', model: 'claude-haiku-4.5' });
         } else if (requestedModel === 'local-rule') {

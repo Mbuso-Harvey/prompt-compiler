@@ -85,12 +85,12 @@ const vertexCompiler = new PromptCompiler({
   model: 'gemini-3.5-flash'
 });
 
-// Azure AI Foundry / Azure OpenAI (GPT-5.4 Mini)
+// Azure AI Foundry (GPT-4.1 Mini)
 const azureCompiler = new PromptCompiler({
   provider: 'azure',
   apiKey: process.env.AZURE_OPENAI_KEY,
-  azureEndpoint: process.env.AZURE_AI_ENDPOINT,
-  azureDeployment: 'gpt-5.4-mini'
+  azureEndpoint: 'https://mbusoharvey-8727-resource.services.ai.azure.com',
+  azureDeployment: 'gpt-4.1-mini'
 });
 ```
 
