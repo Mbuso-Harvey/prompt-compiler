@@ -1,0 +1,13 @@
+{
+  "name": "prompt-compiler",
+  "version": "1.0.0",
+  "description": "A lightweight compilation layer between natural speech/dictation and LLMs",
+  "main": "src/compiler.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test/compiler.test.js"
+  },
+  "keywords": ["prompt", "compiler", "llm", "voice", "speech", "dictation"],
+  "author": "",
+  "license": "MIT"
+}
