@@ -33,7 +33,21 @@ const server = http.createServer(async (req, res) => {
       try {
         const payload = JSON.parse(body || '{}');
         const rawText = payload.raw_text || '';
-        const result = await compiler.compile(rawText);
+        const requestedModel = payload.model || 'inherit';
+
+        // Select provider based on model selection
+        let activeCompiler = compiler;
+        if (requestedModel === 'gemini-1.5-flash') {
+          activeCompiler = new PromptCompiler({ provider: 'vertex', model: 'gemini-1.5-flash' });
+        } else if (requestedModel === 'gpt-4o-mini') {
+          activeCompiler = new PromptCompiler({ provider: 'openai', model: 'gpt-4o-mini' });
+        } else if (requestedModel === 'claude-3-5-haiku') {
+          activeCompiler = new PromptCompiler({ provider: 'anthropic', model: 'claude-3-5-haiku-latest' });
+        } else if (requestedModel === 'local-rule') {
+          activeCompiler = new PromptCompiler({ provider: 'local' });
+        }
+
+        const result = await activeCompiler.compile(rawText);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
       } catch (err) {

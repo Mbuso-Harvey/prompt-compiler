@@ -74,5 +74,27 @@ print(result["compiled_prompt"])
 
 ---
 
-## 📋 System Prompt for LLM Backends
-See [SPECIFICATION.md](SPECIFICATION.md) for the complete Prompt Compiler system prompt instructions, JSON schemas, and architectural breakdown.
+### 4. Use with Cloud Providers (GCP Vertex AI & Azure AI Foundry)
+```javascript
+// Google Cloud Vertex AI (Gemini 1.5 Flash)
+const vertexCompiler = new PromptCompiler({
+  provider: 'vertex',
+  apiKey: process.env.GEMINI_API_KEY,
+  model: 'gemini-1.5-flash'
+});
+
+// Azure AI Foundry / Azure OpenAI (GPT-4o Mini)
+const azureCompiler = new PromptCompiler({
+  provider: 'azure',
+  apiKey: process.env.AZURE_OPENAI_KEY,
+  azureEndpoint: process.env.AZURE_AI_ENDPOINT,
+  azureDeployment: 'gpt-4o-mini'
+});
+```
+
+---
+
+## 📖 Guides & Documentation
+- **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)**: How to bring the compiler into VS Code, Copilot, browser extensions, and OS-level dictation workflows.
+- **[SPECIFICATION.md](SPECIFICATION.md)**: Complete Prompt Compiler system prompt instructions, JSON schemas, and architectural breakdown.
+

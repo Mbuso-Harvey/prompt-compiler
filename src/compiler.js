@@ -212,11 +212,17 @@ class RuleBasedCompilerEngine {
  */
 class PromptCompiler {
   constructor(options = {}) {
-    this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || null;
-    this.provider = options.provider || 'local'; // 'local' | 'openai' | 'anthropic' | 'custom'
-    this.model = options.model || (this.provider === 'openai' ? 'gpt-4o-mini' : 'claude-3-5-haiku-latest');
+    this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY || process.env.AZURE_OPENAI_KEY || null;
+    this.provider = options.provider || 'local'; // 'local' | 'openai' | 'anthropic' | 'vertex' | 'azure' | 'custom'
+    this.model = options.model || (this.provider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash');
     this.localEngine = new RuleBasedCompilerEngine();
     this.customEndpoint = options.customEndpoint || null;
+    // GCP Vertex / Gemini configs
+    this.gcpProjectId = options.gcpProjectId || process.env.GCP_PROJECT_ID || null;
+    this.gcpRegion = options.gcpRegion || process.env.GCP_REGION || 'us-central1';
+    // Azure AI Foundry / Azure OpenAI configs
+    this.azureEndpoint = options.azureEndpoint || process.env.AZURE_AI_ENDPOINT || null;
+    this.azureDeployment = options.azureDeployment || process.env.AZURE_DEPLOYMENT_NAME || 'gpt-4o-mini';
   }
 
   async compile(rawDictation) {
@@ -230,17 +236,104 @@ class PromptCompiler {
       };
     }
 
-    // If API credentials are configured, execute via LLM
-    if (this.provider === 'openai' && this.apiKey) {
+    // 1. Google Cloud Vertex AI / Gemini API
+    if (this.provider === 'vertex' || this.provider === 'gemini') {
+      return await this._compileWithVertexAI(rawDictation);
+    }
+    // 2. Azure AI Foundry / Azure OpenAI
+    else if (this.provider === 'azure' || this.provider === 'foundry') {
+      return await this._compileWithAzure(rawDictation);
+    }
+    // 3. OpenAI Direct
+    else if (this.provider === 'openai' && this.apiKey) {
       return await this._compileWithOpenAI(rawDictation);
-    } else if (this.provider === 'anthropic' && this.apiKey) {
+    }
+    // 4. Anthropic Direct
+    else if (this.provider === 'anthropic' && this.apiKey) {
       return await this._compileWithAnthropic(rawDictation);
-    } else if (this.provider === 'custom' && this.customEndpoint) {
+    }
+    // 5. Custom / Self-hosted endpoint (e.g. Ollama, vLLM, OpenRouter)
+    else if (this.provider === 'custom' && this.customEndpoint) {
       return await this._compileWithCustomEndpoint(rawDictation);
     }
 
-    // Fallback: Local rule-based compilation engine
+    // Fallback: Local offline rule-based compilation engine
     return this.localEngine.compile(rawDictation);
+  }
+
+  async _compileWithVertexAI(rawDictation) {
+    try {
+      // Direct Gemini REST endpoint using API key or Vertex OAuth bearer token
+      const endpoint = this.apiKey.startsWith('AIza')
+        ? `https://generativelanguage.googleapis.com/v1beta/models/${this.model || 'gemini-1.5-flash'}:generateContent?key=${this.apiKey}`
+        : `https://${this.gcpRegion}-aiplatform.googleapis.com/v1/projects/${this.gcpProjectId}/locations/${this.gcpRegion}/publishers/google/models/${this.model || 'gemini-1.5-flash'}:generateContent`;
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (!this.apiKey.startsWith('AIza')) {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: COMPILER_SYSTEM_PROMPT }]
+          },
+          contents: [
+            { role: 'user', parts: [{ text: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }] }
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Vertex AI error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const parsed = JSON.parse(text);
+      return this._formatResult(rawDictation, parsed);
+    } catch (err) {
+      console.warn('Vertex AI Compiler failed, falling back to local engine:', err.message);
+      return this.localEngine.compile(rawDictation);
+    }
+  }
+
+  async _compileWithAzure(rawDictation) {
+    try {
+      const endpoint = `${this.azureEndpoint.replace(/\/$/, '')}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=2024-08-01-preview`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.apiKey
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: COMPILER_SYSTEM_PROMPT },
+            { role: 'user', content: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Azure Foundry API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const parsed = JSON.parse(data.choices[0].message.content);
+      return this._formatResult(rawDictation, parsed);
+    } catch (err) {
+      console.warn('Azure Foundry Compiler failed, falling back to local engine:', err.message);
+      return this.localEngine.compile(rawDictation);
+    }
   }
 
   async _compileWithOpenAI(rawDictation) {
