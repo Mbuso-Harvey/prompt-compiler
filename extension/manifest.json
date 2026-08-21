@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Prompt Compiler",
+  "version": "1.0.0",
+  "description": "Speech-to-Prompt compilation layer. Refines dictated thoughts into crisp first-person prompts before sending to LLMs.",
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Prompt Compiler Settings"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://*.openai.com/*",
+        "http://localhost:*/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

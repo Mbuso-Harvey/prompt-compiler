@@ -1,0 +1,29 @@
+{
+  "name": "prompt-compiler-vscode",
+  "displayName": "Prompt Compiler for VS Code & Copilot",
+  "description": "Speech-to-Prompt compilation layer for VS Code and GitHub Copilot Chat.",
+  "version": "1.0.0",
+  "publisher": "mbuso-harvey",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["AI", "Other"],
+  "activationEvents": ["onCommand:promptCompiler.compileDictation"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "promptCompiler.compileDictation",
+        "title": "Prompt Compiler: Compile Voice Dictation / Thought Stream"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "promptCompiler.compileDictation",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorTextFocus || inChat"
+      }
+    ]
+  }
+}
