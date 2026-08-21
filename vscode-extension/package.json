@@ -7,14 +7,21 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["AI", "Other"],
-  "activationEvents": ["onCommand:promptCompiler.compileDictation"],
+  "categories": ["AI", "Programming Languages", "Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
         "command": "promptCompiler.compileDictation",
-        "title": "Prompt Compiler: Compile Voice Dictation / Thought Stream"
+        "title": "Prompt Compiler: Compile Voice Dictation / Thought Stream",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "promptCompiler.configureSettings",
+        "title": "Prompt Compiler: Configure Provider & API Key"
       }
     ],
     "keybindings": [
@@ -22,8 +29,46 @@
         "command": "promptCompiler.compileDictation",
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v",
-        "when": "editorTextFocus || inChat"
+        "when": "editorTextFocus || inChat || true"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Prompt Compiler",
+      "properties": {
+        "promptCompiler.provider": {
+          "type": "string",
+          "default": "local",
+          "enum": ["local", "azure", "vertex", "openai", "anthropic"],
+          "enumDescriptions": [
+            "Local Offline Heuristic Engine (100% Free, Zero API calls)",
+            "Azure AI Foundry (GPT-4.1 Mini)",
+            "Google Cloud Vertex AI (Gemini 3.5 Flash / 3.1 Flash)",
+            "OpenAI API (GPT-5.4 Mini)",
+            "Anthropic API (Claude Haiku 4.5)"
+          ],
+          "description": "Select the LLM compilation backend or use the free local engine."
+        },
+        "promptCompiler.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API Key for your chosen LLM provider (BYOK - Bring Your Own Key)."
+        },
+        "promptCompiler.endpoint": {
+          "type": "string",
+          "default": "https://mbusoharvey-8727-resource.services.ai.azure.com",
+          "description": "Custom API endpoint or Azure AI Foundry resource URL."
+        },
+        "promptCompiler.model": {
+          "type": "string",
+          "default": "gpt-4.1-mini",
+          "description": "Model identifier to use for compilation."
+        },
+        "promptCompiler.showReviewDiff": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show interactive confirmation modal displaying Original vs Compiled preview before inserting."
+        }
+      }
+    }
   }
 }

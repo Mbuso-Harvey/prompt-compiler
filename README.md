@@ -97,6 +97,7 @@ const azureCompiler = new PromptCompiler({
 ---
 
 ## 📖 Guides & Documentation
+- **[MONETIZATION_AND_PRICING_STRATEGY.md](MONETIZATION_AND_PRICING_STRATEGY.md)**: Zero-cost architecture, pricing tiers, profit margins (99%+), and Pro feature roadmap.
 - **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)**: How to bring the compiler into VS Code, Copilot, browser extensions, and OS-level dictation workflows.
 - **[SPECIFICATION.md](SPECIFICATION.md)**: Complete Prompt Compiler system prompt instructions, JSON schemas, and architectural breakdown.
 
