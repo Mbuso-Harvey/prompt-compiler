@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const htmlContent = `<!DOCTYPE html>
 <html lang="en" data-theme="system">
 <head>
   <meta charset="UTF-8">
@@ -1439,15 +1442,15 @@
         listEl.innerHTML = '<div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; padding: 1rem;">No recent compiled prompts yet.</div>';
         return;
       }
-      listEl.innerHTML = history.map(item => `
-        <div style="background: var(--bg-subtle); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.75rem; cursor: pointer; border: 1px solid var(--border);" onclick="loadPrompt('${encodeURIComponent(item.text)}')">
+      listEl.innerHTML = history.map(item => \`
+        <div style="background: var(--bg-subtle); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.75rem; cursor: pointer; border: 1px solid var(--border);" onclick="loadPrompt('\${encodeURIComponent(item.text)}')">
           <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-            <span style="font-weight: 600; color: var(--text-main);">${item.mode.toUpperCase()}</span>
-            <span style="color: var(--text-faint); font-size: 0.68rem;">${item.timestamp}</span>
+            <span style="font-weight: 600; color: var(--text-main);">\${item.mode.toUpperCase()}</span>
+            <span style="color: var(--text-faint); font-size: 0.68rem;">\${item.timestamp}</span>
           </div>
-          <div style="color: var(--text-muted); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.text}</div>
+          <div style="color: var(--text-muted); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">\${item.text}</div>
         </div>
-      `).join('');
+      \`).join('');
     }
 
     function loadPrompt(encodedText) {
@@ -1530,7 +1533,7 @@
           secondsElapsed++;
           const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
           const secs = String(secondsElapsed % 60).padStart(2, '0');
-          document.getElementById('voiceTimer').innerText = `${mins}:${secs}`;
+          document.getElementById('voiceTimer').innerText = \`\${mins}:\${secs}\`;
         }, 1000);
       }
     }
@@ -1661,4 +1664,7 @@
     });
   </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(__dirname, '..', 'public', 'index.html'), htmlContent, 'utf8');
+console.log('✅ Generated streamlined user-flow public/index.html');
