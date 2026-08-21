@@ -109,6 +109,7 @@ const azureCompiler = new PromptCompiler({
 ---
 
 ## 📖 Guides & Documentation
+- **[DESIGN_SYSTEM_AND_WIREFRAMES.md](DESIGN_SYSTEM_AND_WIREFRAMES.md)**: Master UX architecture, benchmark provenance (GitHub Copilot, Raycast, Cursor, Wispr Flow, Linear), ASCII wireframes, and design system tokens.
 - **[MONETIZATION_AND_PRICING_STRATEGY.md](MONETIZATION_AND_PRICING_STRATEGY.md)**: Exhaustive feature matrix, token cost margins (99.7% profit), and conversion strategies.
 - **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)**: How to bring the compiler into VS Code, Copilot, browser extensions, and OS-level dictation workflows.
 - **[SPECIFICATION.md](SPECIFICATION.md)**: Complete Prompt Compiler system prompt instructions, JSON schemas, and architectural breakdown.
