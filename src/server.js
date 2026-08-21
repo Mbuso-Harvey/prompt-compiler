@@ -34,6 +34,8 @@ const server = http.createServer(async (req, res) => {
         const payload = JSON.parse(body || '{}');
         const rawText = payload.raw_text || '';
         const requestedModel = payload.model || 'inherit';
+        const mode = payload.mode || 'general';
+        const teamRules = payload.team_rules || [];
 
         // Select provider based on model selection
         let activeCompiler = compiler;
@@ -47,7 +49,7 @@ const server = http.createServer(async (req, res) => {
           activeCompiler = new PromptCompiler({ provider: 'local' });
         }
 
-        const result = await activeCompiler.compile(rawText);
+        const result = await activeCompiler.compile(rawText, { mode, teamRules });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
       } catch (err) {

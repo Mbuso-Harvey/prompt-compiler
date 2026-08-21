@@ -1,8 +1,8 @@
-const assert = require('assert');
-const { PromptCompiler, RuleBasedCompilerEngine } = require('../src/compiler');
+﻿const assert = require('assert');
+const { PromptCompiler, RuleBasedCompilerEngine, DOMAIN_MODES, buildSystemPrompt } = require('../src/compiler');
 
 async function runTests() {
-  console.log('🧪 Starting Prompt Compiler Test Suite...\n');
+  console.log('🧪 Starting Prompt Compiler Comprehensive Test Suite...\n');
   const engine = new RuleBasedCompilerEngine();
 
   // Test 1: First person voice enforcement
@@ -38,14 +38,36 @@ async function runTests() {
   console.log('  ✅ Passed:', res4.compiled_prompt);
   console.log('  📊 Token Savings:', res4.token_savings);
 
-  // Test 5: Empty input handling
-  console.log('\nTest 5: Handles empty input gracefully');
-  const res5 = engine.compile('');
-  assert.strictEqual(res5.compiled_prompt, '');
-  assert.strictEqual(res5.confidence_score, 100);
+  // Test 5: Pro Tier Domain Mode (Bug Report)
+  console.log('\nTest 5: [PRO TIER] Domain Mode specialization (Bug Report Mode)');
+  const input5 = "The login modal fails when submitting with empty email, it should show red error border instead of crashing the page.";
+  const res5 = engine.compile(input5, { mode: 'bug_report' });
+  assert.ok(res5.compiled_prompt.includes('Problem Summary:'), 'Must structure as bug report');
+  console.log('  ✅ Passed:', res5.compiled_prompt);
+
+  // Test 6: Team Tier Rules Injection
+  console.log('\nTest 6: [TEAM TIER] Team Rules & Guardrails Injection');
+  const input6 = "Create an express router for payment checkout.";
+  const teamRules = [
+    "Strict TypeScript typing required (no any)",
+    "Unit tests with Vitest must accompany all routes",
+    "Security: Validate all request bodies with Zod"
+  ];
+  const res6 = engine.compile(input6, { mode: 'code_refactor', teamRules });
+  assert.ok(res6.compiled_prompt.includes('Team Guidelines & Guardrails:'), 'Must include team guidelines section');
+  assert.ok(res6.compiled_prompt.includes('Strict TypeScript'), 'Must contain rule 1');
+  assert.ok(res6.compiled_prompt.includes('Vitest'), 'Must contain rule 2');
+  assert.ok(res6.compiled_prompt.includes('Zod'), 'Must contain rule 3');
+  console.log('  ✅ Passed:', res6.compiled_prompt);
+
+  // Test 7: Empty input handling
+  console.log('\nTest 7: Handles empty input gracefully');
+  const res7 = engine.compile('');
+  assert.strictEqual(res7.compiled_prompt, '');
+  assert.strictEqual(res7.confidence_score, 100);
   console.log('  ✅ Passed');
 
-  console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY!');
+  console.log('\n🎉 ALL 7 TEST SUITES PASSED SUCCESSFULLY!');
 }
 
 runTests().catch(err => {

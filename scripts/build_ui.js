@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const htmlContent = `<!DOCTYPE html>
 <html lang="en" data-theme="system">
 <head>
   <meta charset="UTF-8">
@@ -1162,4 +1165,7 @@
     });
   </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(__dirname, '..', 'public', 'index.html'), htmlContent, 'utf8');
+console.log('✅ Successfully generated public/index.html with ROI dashboard and tier management');

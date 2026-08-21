@@ -96,8 +96,20 @@ const azureCompiler = new PromptCompiler({
 
 ---
 
+---
+
+## 💎 Monetization & Feature Tiers
+
+| Tier | Pricing | Core Capabilities |
+| :--- | :--- | :--- |
+| **🆓 Free Tier** | **$0** (Free Forever) | Local Offline Heuristic Engine ($0 API cost to developer) + BYOK (Bring Your Own Key) for unlimited compilation. |
+| **💎 Pro Tier** | **$5/mo** or **$49 Lifetime** | Hosted instant cloud speed (<200ms, no API keys needed), High-Accuracy Voice STT, 5 Domain Modes (Code/Refactor, PR Review, Architecture ADR, Bug Report, SQL), Real-Time Token & Dollar ROI Dashboard. |
+| **🏢 Team Tier** | **$15/seat/mo** | All Pro Features + Mandatory Team Rules & Guardrails Injection, Centralized Seat Management, Organization-Wide ROI Analytics, Shared Team Prompt Macros. |
+
+---
+
 ## 📖 Guides & Documentation
-- **[MONETIZATION_AND_PRICING_STRATEGY.md](MONETIZATION_AND_PRICING_STRATEGY.md)**: Zero-cost architecture, pricing tiers, profit margins (99%+), and Pro feature roadmap.
+- **[MONETIZATION_AND_PRICING_STRATEGY.md](MONETIZATION_AND_PRICING_STRATEGY.md)**: Exhaustive feature matrix, token cost margins (99.7% profit), and conversion strategies.
 - **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)**: How to bring the compiler into VS Code, Copilot, browser extensions, and OS-level dictation workflows.
 - **[SPECIFICATION.md](SPECIFICATION.md)**: Complete Prompt Compiler system prompt instructions, JSON schemas, and architectural breakdown.
 

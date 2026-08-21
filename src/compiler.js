@@ -1,10 +1,69 @@
-/**
- * Prompt Compiler System Prompt & Instructions
+﻿/**
+ * Prompt Compiler System Prompt & Domain Mode Instructions
  */
-const COMPILER_SYSTEM_PROMPT = `You are the Prompt Compiler. Your sole responsibility is to act as a precision compiler between the user's raw, spoken dictation and the receiving Large Language Model (LLM).
+
+const DOMAIN_MODES = {
+  general: {
+    id: 'general',
+    name: 'General Prompt',
+    icon: '⚡',
+    description: 'Standard first-person compilation for general engineering & assistant tasks.',
+    instruction: 'Organize into logical sections, requirements, and constraints with first-person voice.'
+  },
+  code_refactor: {
+    id: 'code_refactor',
+    name: 'Code & Refactor (Pro)',
+    icon: '🛠️',
+    description: 'Specialized for code changes, technical specs, parameter types, and test requirements.',
+    instruction: 'Focus on exact technical specifications, preserving code identifiers, function signatures, library constraints, test-driven requirements, and negative constraints.'
+  },
+  code_review: {
+    id: 'code_review',
+    name: 'PR / Code Review (Pro)',
+    icon: '🔍',
+    description: 'Formats rambling review feedback into structured PR review comments with severity and actionable recommendations.',
+    instruction: 'Structure the feedback cleanly into: Summary, Severity (Critical/Warning/Nit), File/Context references, and Constructive Suggestions.'
+  },
+  architecture_adr: {
+    id: 'architecture_adr',
+    name: 'Architecture RFC / ADR (Pro)',
+    icon: '🏗️',
+    description: 'Structures design thoughts into standard Architecture Decision Records (Context, Decision, Consequences, Trade-offs).',
+    instruction: 'Structure into: Context & Problem, Proposed Decision, Key Requirements, Considered Alternatives, and Trade-offs/Consequences.'
+  },
+  bug_report: {
+    id: 'bug_report',
+    name: 'Bug Report / Issue (Pro)',
+    icon: '🐞',
+    description: 'Formats spoken problem reports into Expected Behavior, Actual Behavior, and Steps to Reproduce.',
+    instruction: 'Structure into: Summary, Steps to Reproduce, Expected vs Actual Behavior, Environment/Context, and Error logs if mentioned.'
+  },
+  sql_data: {
+    id: 'sql_data',
+    name: 'SQL & Database (Pro)',
+    icon: '📊',
+    description: 'Formats business logic and data queries into schema requirements, JOIN/aggregation goals, and indexing constraints.',
+    instruction: 'Structure into: Query Objectives, Schema/Table Context, Filtering & Aggregation Criteria, and Performance/Indexing constraints.'
+  }
+};
+
+function buildSystemPrompt({ mode = 'general', teamRules = [] } = {}) {
+  const modeSpec = DOMAIN_MODES[mode] || DOMAIN_MODES.general;
+
+  let teamRulesSection = '';
+  if (Array.isArray(teamRules) && teamRules.length > 0) {
+    teamRulesSection = `\n\n### MANDATORY TEAM RULES & GUARDRAILS (Team Tier):
+The following workspace rules MUST be respected and seamlessly incorporated into the compiled prompt's constraints section:
+${teamRules.map((rule, idx) => `${idx + 1}. ${rule}`).join('\n')}`;
+  }
+
+  return `You are the Prompt Compiler. Your sole responsibility is to act as a precision compiler between the user's raw, spoken dictation and the receiving Large Language Model (LLM).
 
 ### MISSION:
 Transform raw verbal stream-of-consciousness, speech disfluencies, self-corrections, and disorganized dictation into a clean, concise, coherent, and well-structured prompt ready for LLM consumption.
+
+### DOMAIN MODE INSTRUCTION (${modeSpec.name}):
+${modeSpec.instruction}
 
 ### STRICT RULES:
 
@@ -29,7 +88,7 @@ Transform raw verbal stream-of-consciousness, speech disfluencies, self-correcti
    - Organize scattered thoughts into a logical order.
    - Structure using paragraphs, bullet points, headers, or numbered lists when helpful for clarity.
    - Preserve all concrete details, requirements, constraints, examples, do's and don'ts.
-   - Shorten the message where possible by removing fluff, but do not drop distinct requirements.
+   - Shorten the message where possible by removing fluff, but do not drop distinct requirements.${teamRulesSection}
 
 5. CONFIDENCE SCORING:
    - Assess your confidence (0% to 100%) in how accurately and faithfully the compiled prompt captures the user's intended meaning without ambiguity.
@@ -45,10 +104,12 @@ Respond with a JSON object matching this schema:
   "changes_summary": ["string"], // list of transformations made
   "clarification_notes": "string | null"
 }`;
+}
+
+const COMPILER_SYSTEM_PROMPT = buildSystemPrompt({ mode: 'general' });
 
 /**
  * Deterministic / Rule-based local heuristic compiler (used when no external LLM API key is provided)
- * Cleans speech disfluencies, resolves self-corrections, fixes voice, removes redundancy, and formats structure.
  */
 class RuleBasedCompilerEngine {
   constructor() {
@@ -59,20 +120,22 @@ class RuleBasedCompilerEngine {
     ];
   }
 
-  compile(rawText) {
+  compile(rawText, options = {}) {
     if (!rawText || !rawText.trim()) {
       return {
         compiled_prompt: '',
         confidence_score: 100,
         changes_summary: ['Empty input'],
         clarification_notes: null,
-        token_savings: { raw_words: 0, compiled_words: 0, saved_percent: 0 }
+        token_savings: { raw_words: 0, compiled_words: 0, saved_percent: 0, tokens_cut: 0, estimated_dollar_savings: 0 }
       };
     }
 
     let text = rawText.trim();
     const originalWordCount = text.split(/\s+/).filter(Boolean).length;
     const changes = [];
+    const mode = options.mode || 'general';
+    const teamRules = options.teamRules || [];
 
     // 1. Strip verbal fillers & clean up commas
     let removedFillers = false;
@@ -82,13 +145,12 @@ class RuleBasedCompilerEngine {
         text = text.replace(regex, ' ');
       }
     }
-    // Clean dangling commas or leading/trailing commas left by stripped fillers
     text = text.replace(/\s*,\s*,\s*/g, ', ').replace(/^\s*,\s*/, '').replace(/,\s*([.!?])/g, '$1');
     if (removedFillers) {
       changes.push('Removed conversational filler words and verbal disfluencies');
     }
 
-    // 2. Resolve mid-sentence self-corrections (e.g., "X, wait no Y" / "X, actually Y")
+    // 2. Resolve mid-sentence self-corrections
     const correctionPatterns = [
       /(?:^|\s)(.+?),?\s+(?:wait no|actually no|no wait|scratch that|actually make it|correction:?)\s+(.+?)(?=[.,;\n]|$)/gi,
       /(?:^|\s)(.+?),?\s+actually\s+(.+?)(?=[.,;\n]|$)/gi
@@ -103,16 +165,15 @@ class RuleBasedCompilerEngine {
         });
       }
     }
-    // Strip leading "no, " if left from "actually no"
     text = text.replace(/^\s*no,\s*/i, '');
     if (hadCorrections) {
       changes.push('Resolved mid-speech self-corrections to final intended decisions');
     }
 
-    // 3. Normalize repeated words (e.g. "I I want", "the the")
+    // 3. Normalize repeated words
     text = text.replace(/\b(\w+)\s+\1\b/gi, '$1');
 
-    // 4. Transform third-person framing into first-person if user spoke in third-person meta language
+    // 4. Transform third-person framing into first-person
     const thirdPersonReplacements = [
       [/^the user wants to\s+/i, 'I want to '],
       [/^the user needs\s+/i, 'I need '],
@@ -132,14 +193,12 @@ class RuleBasedCompilerEngine {
       changes.push('Standardized voice into direct first-person prompt');
     }
 
-    // 5. Consolidate sentences and organize into logical points if multiple clauses exist
-    // Split into sentences / thoughts
+    // 5. Consolidate sentences
     const rawSentences = text
-      .split(/(?<=[.?!])\s+|\n+|(?:,\s*(?:and also|oh and|plus|furthermore|additionally)\s*)/gi)
+      .split(/(?<=[.!?])\s+|\n+|(?:,\s*(?:and also|oh and|plus|furthermore|additionally)\s*)/gi)
       .map(s => s.trim().replace(/^[,.-]\s*/, ''))
       .filter(s => s.length > 0);
 
-    // Deduplicate near-identical sentences
     const uniqueSentences = [];
     const seenSentences = new Set();
 
@@ -147,7 +206,6 @@ class RuleBasedCompilerEngine {
       const normalized = sentence.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (normalized.length > 3 && !seenSentences.has(normalized)) {
         seenSentences.add(normalized);
-        // Capitalize first letter
         const formatted = sentence.charAt(0).toUpperCase() + sentence.slice(1);
         uniqueSentences.push(formatted);
       }
@@ -157,9 +215,22 @@ class RuleBasedCompilerEngine {
       changes.push('Consolidated redundant and duplicated thoughts');
     }
 
-    // 6. Structure output cleanly
+    // 6. Structure output cleanly based on domain mode
     let compiledPrompt = '';
-    if (uniqueSentences.length === 1) {
+    if (mode === 'bug_report') {
+      const intro = uniqueSentences[0] || text;
+      const bullets = uniqueSentences.slice(1).map(s => `- ${s}`).join('\n') || `- ${text}`;
+      compiledPrompt = `Please investigate and fix the following issue:\n\n### Problem Summary:\n${intro}\n\n### Key Details & Reproduction:\n${bullets}`;
+      changes.push('Formatted into structured Bug Report schema');
+    } else if (mode === 'code_review') {
+      const bullets = uniqueSentences.map(s => `- ${s}`).join('\n');
+      compiledPrompt = `Please review these changes with the following feedback:\n\n### Review Comments:\n${bullets}`;
+      changes.push('Formatted into structured PR Review comments');
+    } else if (mode === 'architecture_adr') {
+      const bullets = uniqueSentences.map(s => `- ${s}`).join('\n');
+      compiledPrompt = `### Architecture Decision Record (ADR):\n\n**Context & Decisions:**\n${bullets}`;
+      changes.push('Formatted into Architecture Decision Record structure');
+    } else if (uniqueSentences.length === 1) {
       compiledPrompt = uniqueSentences[0];
       if (!/[.!?]$/.test(compiledPrompt)) compiledPrompt += '.';
     } else if (uniqueSentences.length <= 3) {
@@ -176,6 +247,12 @@ class RuleBasedCompilerEngine {
       changes.push('Organized scattered thoughts into structured sections and bullet points');
     }
 
+    // 7. Append Team Rules if provided (Team Tier)
+    if (Array.isArray(teamRules) && teamRules.length > 0) {
+      compiledPrompt += `\n\n### Team Guidelines & Guardrails:\n${teamRules.map(r => `- ${r}`).join('\n')}`;
+      changes.push(`Injected ${teamRules.length} Team Guardrails`);
+    }
+
     // Clean whitespace
     compiledPrompt = compiledPrompt.replace(/\s{2,}/g, ' ').replace(/\n\s+\n/g, '\n\n').trim();
 
@@ -184,7 +261,9 @@ class RuleBasedCompilerEngine {
       ? Math.max(0, Math.round(((originalWordCount - compiledWordCount) / originalWordCount) * 100))
       : 0;
 
-    // Confidence heuristic
+    const tokensCut = Math.max(0, (originalWordCount - compiledWordCount) * 1.3);
+    const estimatedDollarSavings = (tokensCut / 1000000) * 10.0;
+
     let confidence = 96;
     if (hadCorrections) confidence -= 2;
     if (originalWordCount > 80) confidence -= 3;
@@ -195,10 +274,13 @@ class RuleBasedCompilerEngine {
       confidence_score: Math.max(75, Math.min(100, confidence)),
       changes_summary: changes.length > 0 ? changes : ['Polished grammar and formatted output'],
       clarification_notes: null,
+      domain_mode: mode,
       token_savings: {
         raw_words: originalWordCount,
         compiled_words: compiledWordCount,
-        saved_percent: wordReduction
+        saved_percent: wordReduction,
+        tokens_cut: Math.round(tokensCut),
+        estimated_dollar_savings: Number(estimatedDollarSavings.toFixed(4))
       }
     };
   }
@@ -206,65 +288,69 @@ class RuleBasedCompilerEngine {
 
 /**
  * Universal Prompt Compiler Class
- * Supports:
- * - Local rule engine (default offline / instant)
- * - Remote LLM API provider (OpenAI, Anthropic, Gemini, Groq, Ollama, OpenRouter, etc.)
  */
 class PromptCompiler {
   constructor(options = {}) {
     this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY || process.env.AZURE_OPENAI_KEY || null;
-    this.provider = options.provider || 'local'; // 'local' | 'openai' | 'anthropic' | 'vertex' | 'azure' | 'custom'
+    this.provider = options.provider || 'local';
     this.model = options.model || (this.provider === 'openai' ? 'gpt-5.4-mini' : (this.provider === 'vertex' ? 'gemini-3.5-flash' : 'claude-haiku-4.5'));
     this.localEngine = new RuleBasedCompilerEngine();
     this.customEndpoint = options.customEndpoint || null;
-    // GCP Vertex / Gemini configs (defaults matched to user's Google Cloud project)
+    this.mode = options.mode || 'general';
+    this.teamRules = options.teamRules || [];
+    
+    // GCP Vertex / Gemini configs
     this.gcpProjectId = options.gcpProjectId || process.env.GCP_PROJECT_ID || 'warm-skill-503300-b0';
     this.gcpRegion = options.gcpRegion || process.env.GCP_REGION || 'us-central1';
-    // Azure AI Foundry / Azure OpenAI configs
+    
+    // Azure AI Foundry configs
     this.azureEndpoint = options.azureEndpoint || process.env.AZURE_AI_ENDPOINT || 'https://mbusoharvey-8727-resource.services.ai.azure.com';
     this.azureDeployment = options.azureDeployment || process.env.AZURE_DEPLOYMENT_NAME || 'gpt-4.1-mini';
   }
 
-  async compile(rawDictation) {
+  async compile(rawDictation, options = {}) {
     if (!rawDictation || !rawDictation.trim()) {
       return {
         compiled_prompt: '',
         confidence_score: 100,
         changes_summary: [],
         clarification_notes: null,
-        token_savings: { raw_words: 0, compiled_words: 0, saved_percent: 0 }
+        token_savings: { raw_words: 0, compiled_words: 0, saved_percent: 0, tokens_cut: 0, estimated_dollar_savings: 0 }
       };
     }
 
+    const mode = options.mode || this.mode || 'general';
+    const teamRules = options.teamRules || this.teamRules || [];
+    const activeSystemPrompt = buildSystemPrompt({ mode, teamRules });
+
     // 1. Google Cloud Vertex AI / Gemini API
     if (this.provider === 'vertex' || this.provider === 'gemini') {
-      return await this._compileWithVertexAI(rawDictation);
+      return await this._compileWithVertexAI(rawDictation, activeSystemPrompt, mode);
     }
     // 2. Azure AI Foundry / Azure OpenAI
     else if (this.provider === 'azure' || this.provider === 'foundry') {
-      return await this._compileWithAzure(rawDictation);
+      return await this._compileWithAzure(rawDictation, activeSystemPrompt, mode);
     }
     // 3. OpenAI Direct
     else if (this.provider === 'openai' && this.apiKey) {
-      return await this._compileWithOpenAI(rawDictation);
+      return await this._compileWithOpenAI(rawDictation, activeSystemPrompt, mode);
     }
     // 4. Anthropic Direct
     else if (this.provider === 'anthropic' && this.apiKey) {
-      return await this._compileWithAnthropic(rawDictation);
+      return await this._compileWithAnthropic(rawDictation, activeSystemPrompt, mode);
     }
-    // 5. Custom / Self-hosted endpoint (e.g. Ollama, vLLM, OpenRouter)
+    // 5. Custom / Self-hosted endpoint
     else if (this.provider === 'custom' && this.customEndpoint) {
-      return await this._compileWithCustomEndpoint(rawDictation);
+      return await this._compileWithCustomEndpoint(rawDictation, activeSystemPrompt, mode);
     }
 
     // Fallback: Local offline rule-based compilation engine
-    return this.localEngine.compile(rawDictation);
+    return this.localEngine.compile(rawDictation, { mode, teamRules });
   }
 
-  async _compileWithVertexAI(rawDictation) {
+  async _compileWithVertexAI(rawDictation, systemPrompt, mode) {
     try {
       const modelName = this.model || 'gemini-3.5-flash';
-      // Direct Gemini REST endpoint using API key or Vertex OAuth bearer token
       const endpoint = (this.apiKey && this.apiKey.startsWith('AIza'))
         ? `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`
         : `https://${this.gcpRegion}-aiplatform.googleapis.com/v1/projects/${this.gcpProjectId}/locations/${this.gcpRegion}/publishers/google/models/${modelName}:generateContent`;
@@ -278,12 +364,8 @@ class PromptCompiler {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: COMPILER_SYSTEM_PROMPT }]
-          },
-          contents: [
-            { role: 'user', parts: [{ text: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }] }
-          ],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }] }],
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.2
@@ -298,25 +380,19 @@ class PromptCompiler {
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
       const parsed = JSON.parse(text);
-      return this._formatResult(rawDictation, parsed);
+      return this._formatResult(rawDictation, parsed, mode);
     } catch (err) {
       console.warn('Vertex AI Compiler failed, falling back to local engine:', err.message);
-      return this.localEngine.compile(rawDictation);
+      return this.localEngine.compile(rawDictation, { mode });
     }
   }
 
-  async _compileWithAzure(rawDictation) {
+  async _compileWithAzure(rawDictation, systemPrompt, mode) {
     try {
-      // Normalize base URL (strip trailing /api/projects/... if present in copy-paste)
       let base = (this.azureEndpoint || '').replace(/\/api\/projects\/.*$/i, '').replace(/\/$/, '');
-      
-      // Determine endpoint based on whether it's an AI Foundry services endpoint or standard azure openai endpoint
-      let endpoint;
-      if (base.includes('.services.ai.azure.com')) {
-        endpoint = `${base}/models/chat/completions?api-version=2024-05-01-preview`;
-      } else {
-        endpoint = `${base}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=2024-08-01-preview`;
-      }
+      let endpoint = base.includes('.services.ai.azure.com')
+        ? `${base}/models/chat/completions?api-version=2024-05-01-preview`
+        : `${base}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=2024-08-01-preview`;
 
       const headers = {
         'Content-Type': 'application/json',
@@ -330,7 +406,7 @@ class PromptCompiler {
         body: JSON.stringify({
           model: this.azureDeployment || 'gpt-4.1-mini',
           messages: [
-            { role: 'system', content: COMPILER_SYSTEM_PROMPT },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }
           ],
           response_format: { type: 'json_object' },
@@ -344,14 +420,14 @@ class PromptCompiler {
 
       const data = await response.json();
       const parsed = JSON.parse(data.choices[0].message.content);
-      return this._formatResult(rawDictation, parsed);
+      return this._formatResult(rawDictation, parsed, mode);
     } catch (err) {
       console.warn('Azure Foundry Compiler failed, falling back to local engine:', err.message);
-      return this.localEngine.compile(rawDictation);
+      return this.localEngine.compile(rawDictation, { mode });
     }
   }
 
-  async _compileWithOpenAI(rawDictation) {
+  async _compileWithOpenAI(rawDictation, systemPrompt, mode) {
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -363,7 +439,7 @@ class PromptCompiler {
           model: this.model,
           response_format: { type: 'json_object' },
           messages: [
-            { role: 'system', content: COMPILER_SYSTEM_PROMPT },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: `Raw Spoken Dictation:\n"""\n${rawDictation}\n"""` }
           ],
           temperature: 0.2
@@ -376,14 +452,14 @@ class PromptCompiler {
 
       const data = await response.json();
       const parsed = JSON.parse(data.choices[0].message.content);
-      return this._formatResult(rawDictation, parsed);
+      return this._formatResult(rawDictation, parsed, mode);
     } catch (err) {
-      console.warn('LLM Compiler failed, falling back to local engine:', err.message);
-      return this.localEngine.compile(rawDictation);
+      console.warn('OpenAI Compiler failed, falling back to local engine:', err.message);
+      return this.localEngine.compile(rawDictation, { mode });
     }
   }
 
-  async _compileWithAnthropic(rawDictation) {
+  async _compileWithAnthropic(rawDictation, systemPrompt, mode) {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -394,7 +470,7 @@ class PromptCompiler {
         },
         body: JSON.stringify({
           model: this.model,
-          system: COMPILER_SYSTEM_PROMPT,
+          system: systemPrompt,
           messages: [
             { role: 'user', content: `Please compile this raw spoken dictation into JSON according to your instructions:\n"""\n${rawDictation}\n"""` }
           ],
@@ -411,14 +487,14 @@ class PromptCompiler {
       const content = data.content[0].text;
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-      return this._formatResult(rawDictation, parsed);
+      return this._formatResult(rawDictation, parsed, mode);
     } catch (err) {
       console.warn('Anthropic Compiler failed, falling back to local engine:', err.message);
-      return this.localEngine.compile(rawDictation);
+      return this.localEngine.compile(rawDictation, { mode });
     }
   }
 
-  async _compileWithCustomEndpoint(rawDictation) {
+  async _compileWithCustomEndpoint(rawDictation, systemPrompt, mode) {
     try {
       const response = await fetch(this.customEndpoint, {
         method: 'POST',
@@ -428,7 +504,7 @@ class PromptCompiler {
         },
         body: JSON.stringify({
           messages: [
-            { role: 'system', content: COMPILER_SYSTEM_PROMPT },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: rawDictation }
           ]
         })
@@ -436,34 +512,41 @@ class PromptCompiler {
       const data = await response.json();
       const text = data.choices ? data.choices[0].message.content : data.compiled_prompt;
       const parsed = typeof text === 'string' ? JSON.parse(text) : text;
-      return this._formatResult(rawDictation, parsed);
+      return this._formatResult(rawDictation, parsed, mode);
     } catch (err) {
       console.warn('Custom Endpoint failed, falling back to local engine:', err.message);
-      return this.localEngine.compile(rawDictation);
+      return this.localEngine.compile(rawDictation, { mode });
     }
   }
 
-  _formatResult(rawDictation, parsed) {
+  _formatResult(rawDictation, parsed, mode = 'general') {
     const rawWords = rawDictation.split(/\s+/).filter(Boolean).length;
     const compiledWords = (parsed.compiled_prompt || '').split(/\s+/).filter(Boolean).length;
     const saved = rawWords > 0 ? Math.max(0, Math.round(((rawWords - compiledWords) / rawWords) * 100)) : 0;
+    const tokensCut = Math.max(0, (rawWords - compiledWords) * 1.3);
+    const estimatedDollarSavings = (tokensCut / 1000000) * 10.0;
 
     return {
       compiled_prompt: parsed.compiled_prompt || '',
       confidence_score: typeof parsed.confidence_score === 'number' ? parsed.confidence_score : 95,
-      changes_summary: Array.isArray(parsed.changes_summary) ? parsed.changes_summary : ['Compiled speech to structured prompt'],
+      changes_summary: Array.isArray(parsed.changes_summary) ? parsed.changes_summary : [`Compiled in ${DOMAIN_MODES[mode]?.name || 'General'} mode`],
       clarification_notes: parsed.clarification_notes || null,
+      domain_mode: mode,
       token_savings: {
         raw_words: rawWords,
         compiled_words: compiledWords,
-        saved_percent: saved
+        saved_percent: saved,
+        tokens_cut: Math.round(tokensCut),
+        estimated_dollar_savings: Number(estimatedDollarSavings.toFixed(4))
       }
     };
   }
 }
 
 module.exports = {
+  DOMAIN_MODES,
   COMPILER_SYSTEM_PROMPT,
+  buildSystemPrompt,
   PromptCompiler,
   RuleBasedCompilerEngine
 };

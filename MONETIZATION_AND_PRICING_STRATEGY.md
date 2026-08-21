@@ -53,39 +53,53 @@ Yes, AI developer tools and productivity layers are among the fastest-growing ca
 
 ---
 
-## 🌟 3. Pro / Premium Upgrade Features (Why Users Will Pay)
+## 📊 3. Exhaustive Feature Matrix: Free vs Pro ($5-8/mo) vs Team ($15/seat/mo)
 
-To convert free users to paying Pro subscribers, offer these high-value features:
-
-### 1. Hosted Instant Cloud Backend (No Setup / No API Keys Needed)
-- Free users must get their own API keys or use the local engine.
-- Pro users get **instant 1-click cloud speed (~150ms)** powered by your high-speed managed backend without signing up for Google Cloud or Azure.
-
-### 2. High-Accuracy Cloud Voice STT (Whisper & Multimodal Gemini)
-- Transcribes speech accurately even with heavy background noise, technical jargon, foreign accents, or multi-lingual dictation.
-
-### 3. Domain-Specific Compiler Modes:
-Add specialized compilation presets tailored to specific workflows:
-- **🛠️ Code & Refactoring Mode:** Enforces technical specifications, test-driven requirements, and language conventions.
-- **🔍 Code Review Mode:** Formats diff feedback into concise, constructive PR review comments.
-- **🏗️ Architecture RFC Mode:** Formats rambling design ideas into structured Architecture Decision Records (ADRs).
-- **🐞 Bug Report Mode:** Automatically formats speech into *Expected Behavior*, *Actual Behavior*, *Steps to Reproduce*, and *Logs*.
-- **📊 SQL / Data Mode:** Formats messy business requests into structured schema and query criteria.
-
-### 4. Token & Cost Savings Dashboard:
-- Visual analytics showing:
-  - *“Prompt Compiler cut 42,000 unnecessary tokens from your dictation this week, saving you ~$12.60 on Claude Opus / o1 queries.”*
-  - Quantifies the ROI of the tool immediately to the user.
-
-### 5. Multi-Device Sync & Favorite Prompt Macros:
-- Sync favorite custom compiled prompt templates across VS Code, Chrome Extension, and Mobile/Web.
-
-### 6. Team Style Guidelines (Enterprise Tier):
-- Allows engineering managers to set company-wide prompt rules (e.g., *"Always instruct the model to write TypeScript strict types and unit tests with Vitest"*).
+| Feature / Capability | 🆓 Free Tier ($0) | 💎 Pro Tier ($5/mo or $49 Lifetime) | 🏢 Team Tier ($15/seat/month) |
+| :--- | :---: | :---: | :---: |
+| **Local Offline Heuristic Engine** | ✅ Unlimited ($0 cost) | ✅ Unlimited | ✅ Unlimited |
+| **BYOK (Bring Your Own API Key)** | ✅ Unlimited | ✅ Included | ✅ Included |
+| **First-Person Voice Formatting** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Speech Disfluency & Filler Removal** | ✅ Yes | ✅ Advanced AI | ✅ Advanced AI |
+| **Mid-Speech Self-Correction Fixes** | ✅ Yes | ✅ Advanced AI | ✅ Advanced AI |
+| **Confidence Score Indicator** | ✅ Basic | ✅ High-Precision | ✅ High-Precision |
+| **Hosted Instant Cloud Speed (<200ms)** | ❌ (Must provide key) | ✅ Included (No key required) | ✅ Dedicated Cloud Throughput |
+| **High-Accuracy Cloud Voice STT** | ❌ (Browser WebSpeech only) | ✅ Whisper / Gemini Multimodal STT | ✅ Multi-speaker & Noise Cancellation |
+| **Domain Mode: 🛠️ Code & Refactor** | ❌ Basic | ✅ Full Precision | ✅ Full Precision |
+| **Domain Mode: 🔍 PR / Code Review** | ❌ | ✅ Full Structured Output | ✅ Full Structured Output |
+| **Domain Mode: 🏗️ Architecture ADR** | ❌ | ✅ Full Structured Output | ✅ Full Structured Output |
+| **Domain Mode: 🐞 Bug Report Schema** | ❌ | ✅ Full Structured Output | ✅ Full Structured Output |
+| **Domain Mode: 📊 SQL & Database** | ❌ | ✅ Full Structured Output | ✅ Full Structured Output |
+| **Real-time Dollar & Token ROI Stats** | ❌ | ✅ Personal Dashboard | ✅ Organization-wide Dashboard |
+| **Prompt Macros & Multi-Device Sync** | ❌ | ✅ Up to 50 Macros | ✅ Unlimited Shared Team Macros |
+| **🏢 Team Rules & Guardrails Injection** | ❌ | ❌ | ✅ Unlimited Organization Rules |
+| **🏢 Centralized Billing & Seat Management** | ❌ | ❌ | ✅ Admin Dashboard & SSO |
+| **🏢 Audit Logs & Compliance Export** | ❌ | ❌ | ✅ Full SOC2 / Privacy Export |
 
 ---
 
-## 💳 4. Recommended Payment & Billing Stacks
+## 🎯 4. Why This Pricing Model Succeeds
+
+### A. Free Tier ($0) — Virality & Trust Engine:
+- **Zero Cost to You:** Uses local JavaScript execution on the client's CPU.
+- **Drives Adoption:** Developers install it freely without barriers or trials that expire.
+- **No Risk:** Privacy-conscious developers love that their raw dictation never leaves their device unless they provide a key.
+
+### B. Pro Tier ($5/mo or $49 Lifetime) — Developer Productivity Staple:
+- **Why Users Pay:** "I don't want to manage API keys, billing accounts, or GCP/Azure project permissions. I just want to click one button and have lightning-fast compilation."
+- **Why It's a No-Brainer for Devs:** Saving 5 minutes per prompt compilation across an engineering workday saves ~$500+ worth of engineering time per month for a $5 tool.
+- **Gross Profit Margin:** **99.7%** (Costs you ~$0.015/user/month on Gemini 3.5 Flash / GPT-4.1 Mini).
+
+### C. Team Tier ($15/seat/mo) — Enterprise Governance & Consistency:
+- **Why Engineering Managers Pay $15/seat:**
+  - Standardizes how entire teams prompt LLMs (e.g. injecting required test frameworks, typing conventions, security rules).
+  - Eliminates prompt drift and messy instructions across junior and senior engineers.
+  - Team ROI dashboard shows executive leadership exactly how much token budget is saved company-wide on expensive models like Claude Opus / o1.
+- **Gross Profit Margin:** **99.5%** (Costs you ~$0.05/seat/month, generates $15.00/seat/month).
+
+---
+
+## 💳 5. Payment & Billing Integration Stack
 
 If you want to start accepting payments:
 1. **Lemon Squeezy / Polar.sh / Stripe Checkout:**
