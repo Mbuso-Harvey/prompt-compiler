@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const cleanHtml = `<!DOCTYPE html>
 <html lang="en" data-theme="system">
 <head>
   <meta charset="UTF-8">
@@ -987,4 +990,7 @@
     });
   </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(__dirname, '..', 'public', 'index.html'), cleanHtml, 'utf8');
+console.log('✅ Generated clean single-composer GitHub Copilot interface at public/index.html');
