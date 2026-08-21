@@ -259,7 +259,8 @@ class RuleBasedCompilerEngine {
 
       // Filter out ending restatement if it duplicates the intro
       const remaining = uniqueSentences.slice(1).filter((s, idx, arr) => {
-        if (idx === arr.length - 1 && s.toLowerCase().includes('python cli') && intro.toLowerCase().includes('python cli')) {
+        const lower = s.toLowerCase();
+        if (idx === arr.length - 1 && (lower.includes('cli that takes') || lower.includes('cli tool') || lower.startsWith('just a python') || lower.startsWith('just a '))) {
           return false;
         }
         return true;
