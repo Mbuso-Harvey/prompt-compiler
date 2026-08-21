@@ -62,7 +62,7 @@ class PromptCompiler:
         self.api_key = api_key
         self.provider = provider
 
-    def compile(self, raw_text: str) -> Dict[str, Any]:
+    def compile(self, raw_text: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Compiles raw speech/dictation into a refined first-person prompt."""
         if not raw_text or not raw_text.strip():
             return {
@@ -70,7 +70,7 @@ class PromptCompiler:
                 "confidence_score": 100,
                 "changes_summary": ["Empty input"],
                 "clarification_notes": None,
-                "token_savings": {"raw_words": 0, "compiled_words": 0, "saved_percent": 0}
+                "token_savings": {"raw_words": 0, "compiled_words": 0, "saved_percent": 0, "tokens_cut": 0, "estimated_dollar_savings": 0.0}
             }
 
         text = raw_text.strip()
@@ -81,19 +81,28 @@ class PromptCompiler:
         for pat in self.FILLER_PATTERNS:
             if re.search(pat, text, flags=re.IGNORECASE):
                 text = re.sub(pat, ' ', text, flags=re.IGNORECASE)
-                changes.append("Removed conversational filler words")
+                changes.append("Removed conversational filler words and verbal disfluencies")
 
-        # Clean dangling commas
+        # Clean dangling commas and punctuation artifacts
         text = re.sub(r'\s*,\s*,\s*', ', ', text)
         text = re.sub(r'^\s*,\s*', '', text)
+        text = re.sub(r',\s*([.!?])', r'\1', text)
 
         # 2. Resolve mid-speech self-corrections
-        correction_pat = r'(?:^|\s)(.+?),?\s+(?:wait no|actually no|no wait|scratch that|actually make it)\s+(.+?)(?=[.,;\n]|$)'
-        if re.search(correction_pat, text, flags=re.IGNORECASE):
-            text = re.sub(correction_pat, r' \2', text, flags=re.IGNORECASE)
-            changes.append("Resolved mid-speech self-corrections")
-
+        correction_pats = [
+            r'(?:^|\s)(.+?),?\s+(?:wait no|actually no|no wait|scratch that|actually make it|correction:?)\s+(.+?)(?=[.,;\n]|$)',
+            r'(?:^|\s)(.+?),?\s+actually\s+(.+?)(?=[.,;\n]|$)'
+        ]
+        had_corrections = False
+        for pat in correction_pats:
+            if re.search(pat, text, flags=re.IGNORECASE):
+                had_corrections = True
+                text = re.sub(pat, r' \2', text, flags=re.IGNORECASE)
+        
         text = re.sub(r'^\s*no,\s*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^\s*,\s*', '', text)
+        if had_corrections:
+            changes.append("Resolved mid-speech self-corrections to final intended decisions")
 
         # 3. Third person to first person conversion
         third_person_maps = [
@@ -101,30 +110,49 @@ class PromptCompiler:
             (r'^the user needs\s+', 'I need '),
             (r'^the user is asking for\s+', 'Please provide '),
             (r'^tell the assistant to\s+', 'Please '),
-            (r'^can you please\s+', 'Please ')
+            (r'^can you please\s+', 'Please '),
+            (r'^i was thinking maybe we could\s+', 'Please ')
         ]
+        converted_voice = False
         for pattern, repl in third_person_maps:
             if re.search(pattern, text, flags=re.IGNORECASE):
+                converted_voice = True
                 text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
-                changes.append("Enforced first-person perspective")
+        if converted_voice:
+            changes.append("Standardized voice into direct first-person prompt")
 
-        # 4. Clean extra spaces
+        # 4. Clean extra spaces & punctuation
         text = re.sub(r'\s+', ' ', text).strip()
-        if text and not text[-1] in '.!?':
-            text += '.'
+        text = re.sub(r'^\s*,\s*', '', text)
+        if text:
+            text = text[0].upper() + text[1:]
+            if not text[-1] in '.!?':
+                text += '.'
 
         compiled_words = len(text.split())
         saved_pct = round(((raw_words - compiled_words) / raw_words) * 100) if raw_words > 0 else 0
+        tokens_cut = max(0, round((raw_words - compiled_words) * 1.3))
+        dollar_savings = round((tokens_cut / 1_000_000) * 10.0, 4)
+
+        confidence = 96
+        if had_corrections:
+            confidence -= 2
+        if raw_words > 80:
+            confidence -= 3
+        if not changes:
+            confidence = 99
 
         return {
             "compiled_prompt": text,
-            "confidence_score": 96,
-            "changes_summary": list(set(changes)) or ["Refined grammar and normalized tone"],
+            "confidence_score": max(75, min(100, confidence)),
+            "changes_summary": list(dict.fromkeys(changes)) or ["Refined grammar and normalized tone"],
             "clarification_notes": None,
             "token_savings": {
                 "raw_words": raw_words,
                 "compiled_words": compiled_words,
-                "saved_percent": max(0, saved_pct)
+                "saved_percent": max(0, saved_pct),
+                "tokens_cut": tokens_cut,
+                "estimated_dollar_savings": dollar_savings
             }
         }
 

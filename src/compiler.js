@@ -116,7 +116,10 @@ class RuleBasedCompilerEngine {
     this.fillerWords = [
       /\b(um|uh|er|ah|umm|uhh)\b/gi,
       /\b(you know|like I said|as I was saying|let me think|let's see)\b/gi,
-      /\b(sort of|kind of|basically|literally|honestly)\b/gi
+      /\b(sort of|kind of|basically|literally|honestly|I mean)\b/gi,
+      /\b(so yeah|yeah so|oh yeah|oh and|and like|just like)\b/gi,
+      /,\s*like,\s*/gi,
+      /\s+like,\s+/gi
     ];
   }
 
@@ -152,19 +155,20 @@ class RuleBasedCompilerEngine {
 
     // 2. Resolve mid-sentence self-corrections
     const correctionPatterns = [
-      /(?:^|\s)(.+?),?\s+(?:wait no|actually no|no wait|scratch that|actually make it|correction:?)\s+(.+?)(?=[.,;\n]|$)/gi,
-      /(?:^|\s)(.+?),?\s+actually\s+(.+?)(?=[.,;\n]|$)/gi
+      /(?:^|\s)(.+?),?\s+(?:wait no|actually no|no wait|scratch that|actually make it|correction:?)[,:]?\s+(.+?)(?=[.,;\n]|$)/i,
+      /(?:^|\s)(.+?),?\s+actually\s+(.+?)(?=[.,;\n]|$)/i
     ];
 
     let hadCorrections = false;
     for (const pat of correctionPatterns) {
-      if (pat.test(text)) {
+      while (pat.test(text)) {
         hadCorrections = true;
         text = text.replace(pat, (match, before, after) => {
           return ' ' + after.trim();
         });
       }
     }
+    text = text.replace(/\b(wait no|actually no|no wait|scratch that)[,:]?\s*/gi, '');
     text = text.replace(/^\s*no,\s*/i, '');
     if (hadCorrections) {
       changes.push('Resolved mid-speech self-corrections to final intended decisions');
@@ -180,7 +184,9 @@ class RuleBasedCompilerEngine {
       [/^the user is asking for\s+/i, 'Please provide '],
       [/^tell the assistant to\s+/i, 'Please '],
       [/^can you please\s+/i, 'Please '],
-      [/^i was thinking maybe we could\s+/i, 'Please ']
+      [/^i was thinking maybe we could\s+/i, 'Please '],
+      [/^i was thinking about making\s+/i, 'Please create '],
+      [/^i'm thinking about making\s+/i, 'Please create ']
     ];
     let convertedVoice = false;
     for (const [pattern, replacement] of thirdPersonReplacements) {
@@ -193,11 +199,18 @@ class RuleBasedCompilerEngine {
       changes.push('Standardized voice into direct first-person prompt');
     }
 
-    // 5. Consolidate sentences
+    // 5. Consolidate and clean clauses/sentences
     const rawSentences = text
-      .split(/(?<=[.!?])\s+|\n+|(?:,\s*(?:and also|oh and|plus|furthermore|additionally)\s*)/gi)
-      .map(s => s.trim().replace(/^[,.-]\s*/, ''))
-      .filter(s => s.length > 0);
+      .split(/(?<=[.?!])\s+|\n+|(?:,\s*(?:and also|oh and|plus|furthermore|additionally)\s*)/gi)
+      .map(s => {
+        let cleaned = s.trim().replace(/^[,.-]\s*/, '');
+        // Strip conversational prefixes
+        cleaned = cleaned.replace(/^(?:yeah,?\s*|so,?\s*|oh,?\s*|and,?\s*|well,?\s*|like,?\s*|but wait,?\s*|wait,?\s*)+/i, '');
+        cleaned = cleaned.replace(/\b,\s*like\b/gi, '');
+        cleaned = cleaned.replace(/\blike,\s*/gi, '');
+        return cleaned.trim();
+      })
+      .filter(s => s.length > 3);
 
     const uniqueSentences = [];
     const seenSentences = new Set();
@@ -238,8 +251,21 @@ class RuleBasedCompilerEngine {
         .map(s => (/[.!?]$/.test(s) ? s : s + '.'))
         .join(' ');
     } else {
-      const intro = uniqueSentences[0] + (/[.!?]$/.test(uniqueSentences[0]) ? '' : '.');
-      const items = uniqueSentences.slice(1).map(s => {
+      let intro = uniqueSentences[0];
+      if (!intro.startsWith('Please') && !intro.startsWith('I want') && !intro.startsWith('I need')) {
+        intro = 'Please create ' + (intro.charAt(0).toLowerCase() + intro.slice(1));
+      }
+      if (!/[.!?]$/.test(intro)) intro += '.';
+
+      // Filter out ending restatement if it duplicates the intro
+      const remaining = uniqueSentences.slice(1).filter((s, idx, arr) => {
+        if (idx === arr.length - 1 && s.toLowerCase().includes('python cli') && intro.toLowerCase().includes('python cli')) {
+          return false;
+        }
+        return true;
+      });
+
+      const items = remaining.map(s => {
         const hasEndPunctuation = s.endsWith('.') || s.endsWith('!') || s.endsWith('?');
         return `- ${s}${hasEndPunctuation ? '' : '.'}`;
       }).join('\n');

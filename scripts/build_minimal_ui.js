@@ -824,6 +824,54 @@ const minimalHtml = `<!DOCTYPE html>
       font-size: 0.72rem;
       color: var(--text-faint);
     }
+
+    /* ==========================================================================
+       Responsive Mobile / Narrow Viewport Rules
+       ========================================================================== */
+    @media (max-width: 680px) {
+      header {
+        padding: 0.5rem 0.75rem;
+      }
+      .brand h1 {
+        display: none;
+      }
+      .btn-nav span {
+        display: none;
+      }
+      main {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+      }
+      .composer-card {
+        border-radius: var(--radius-md);
+      }
+      .composer-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+      .footer-left, .footer-right {
+        justify-content: space-between;
+        width: 100%;
+      }
+      .footer-right .btn-primary {
+        flex: 1;
+        justify-content: center;
+      }
+      .modal-card {
+        max-width: 95vw !important;
+        margin: 0.5rem;
+      }
+      .settings-layout {
+        grid-template-columns: 1fr;
+      }
+      .settings-sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
   </style>
 </head>
 <body>
