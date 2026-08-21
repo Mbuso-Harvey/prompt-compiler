@@ -324,11 +324,11 @@ class PromptCompiler {
     const activeSystemPrompt = buildSystemPrompt({ mode, teamRules });
 
     // 1. Google Cloud Vertex AI / Gemini API
-    if (this.provider === 'vertex' || this.provider === 'gemini') {
+    if ((this.provider === 'vertex' || this.provider === 'gemini') && this.apiKey) {
       return await this._compileWithVertexAI(rawDictation, activeSystemPrompt, mode);
     }
     // 2. Azure AI Foundry / Azure OpenAI
-    else if (this.provider === 'azure' || this.provider === 'foundry') {
+    else if ((this.provider === 'azure' || this.provider === 'foundry') && this.apiKey) {
       return await this._compileWithAzure(rawDictation, activeSystemPrompt, mode);
     }
     // 3. OpenAI Direct
