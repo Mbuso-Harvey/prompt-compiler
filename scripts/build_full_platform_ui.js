@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const fullUiScript = `<!DOCTYPE html>
 <html lang="en" data-theme="system">
 <head>
   <meta charset="UTF-8">
@@ -1593,4 +1596,7 @@
     });
   </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(__dirname, '..', 'public', 'index.html'), fullUiScript, 'utf8');
+console.log('✅ Generated complete tasks list Master UI at public/index.html');

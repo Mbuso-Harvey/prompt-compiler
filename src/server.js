@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { PromptCompiler } = require('./compiler');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const compiler = new PromptCompiler();
 
 const server = http.createServer(async (req, res) => {
